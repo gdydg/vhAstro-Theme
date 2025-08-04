@@ -1,0 +1,92 @@
+---
+// 音乐胶囊组件
+import "./MusicCapsule.less";
+import { getMusicConfig } from "@/config/musicConfig";
+
+// 获取音乐配置
+const musicConfig = getMusicConfig();
+---
+
+<!-- 音乐配置数据 -->
+<script id="music-config" type="application/json" set:html={JSON.stringify(musicConfig)}></script>
+
+<div id="music-capsule" class="music-capsule">
+  <div class="music-player-container">
+    <div id="aplayer"></div>
+  </div>
+  <div class="music-toggle-btn" id="music-toggle">
+    <svg class="music-icon" viewBox="0 0 24 24" width="20" height="20">
+      <path fill="currentColor" d="M12,3V13.55C11.41,13.21 10.73,13 10,13A3,3 0 0,0 7,16A3,3 0 0,0 10,19A3,3 0 0,0 13,16V7H19V5H12V3Z"/>
+    </svg>
+  </div>
+</div>
+
+<script>
+  import APlayer from 'aplayer';
+  import 'aplayer/dist/APlayer.min.css';
+
+  // 等待DOM加载完成
+  document.addEventListener('DOMContentLoaded', function() {
+    // 从服务器端传递的音乐配置
+    const musicConfig = JSON.parse(document.getElementById('music-config').textContent);
+
+    // 初始化APlayer
+    const ap = new APlayer({
+      container: document.getElementById('aplayer'),
+      mini: true,
+      autoplay: musicConfig.autoplay,
+      theme: musicConfig.theme,
+      loop: musicConfig.loop,
+      order: musicConfig.order,
+      preload: 'auto',
+      volume: musicConfig.volume,
+      mutex: true,
+      listFolded: true,
+      listMaxHeight: 90,
+      audio: musicConfig.playlist
+    });
+
+    // 获取DOM元素
+    const musicCapsule = document.getElementById('music-capsule');
+    const toggleBtn = document.getElementById('music-toggle');
+    const playerContainer = document.querySelector('.music-player-container');
+
+    let isExpanded = false;
+
+    // 切换播放器显示/隐藏
+    function togglePlayer() {
+      isExpanded = !isExpanded;
+      if (isExpanded) {
+        musicCapsule.classList.add('expanded');
+        playerContainer.style.display = 'block';
+      } else {
+        musicCapsule.classList.remove('expanded');
+        playerContainer.style.display = 'none';
+      }
+    }
+
+    // 绑定点击事件
+    toggleBtn.addEventListener('click', togglePlayer);
+
+    // 初始状态：隐藏播放器
+    playerContainer.style.display = 'none';
+
+    // 播放状态改变时更新图标和动画
+    ap.on('play', function () {
+      toggleBtn.querySelector('.music-icon').innerHTML = '<path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z"/>';
+      musicCapsule.classList.add('playing');
+    });
+
+    ap.on('pause', function () {
+      toggleBtn.querySelector('.music-icon').innerHTML = '<path fill="currentColor" d="M12,3V13.55C11.41,13.21 10.73,13 10,13A3,3 0 0,0 7,16A3,3 0 0,0 10,19A3,3 0 0,0 13,16V7H19V5H12V3Z"/>';
+      musicCapsule.classList.remove('playing');
+    });
+
+    ap.on('ended', function () {
+      musicCapsule.classList.remove('playing');
+    });
+
+    // 存储播放器实例到全局变量，方便调试
+    window.musicPlayer = ap;
+  });
+</script>
